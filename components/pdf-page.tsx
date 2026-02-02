@@ -15,9 +15,9 @@ interface PDFPageProps {
   onSelectionClear?: () => void;
 }
 
-export const PDFPage = memo(function PDFPage({ 
-  page, 
-  scale, 
+export const PDFPage = memo(function PDFPage({
+  page,
+  scale,
   containerWidth,
   highlights = [],
   onTextSelect,
@@ -96,7 +96,7 @@ export const PDFPage = memo(function PDFPage({
   // Handle text selection
   const handleMouseUp = useCallback(() => {
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || !textLayerRef.current || !containerRef.current) {
+    if (!selection || selection.isCollapsed || !textLayerRef.current || !containerRef.current || !canvasRef.current) {
       onSelectionClear?.();
       return;
     }
@@ -110,7 +110,7 @@ export const PDFPage = memo(function PDFPage({
     // Get selection rects relative to the container
     const range = selection.getRangeAt(0);
     const rects = Array.from(range.getClientRects());
-    
+
     if (rects.length === 0) {
       onSelectionClear?.();
       return;
@@ -120,22 +120,23 @@ export const PDFPage = memo(function PDFPage({
     const firstRect = rects[0];
     const lastRect = rects[rects.length - 1];
     const containerRect = containerRef.current.getBoundingClientRect();
-    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+
     const position = {
       x: (firstRect.left + lastRect.right) / 2,
       y: firstRect.top,
     };
 
-    // Convert rects to be relative to the container for storage
+    // Convert rects to be relative to the canvas (not container) for accurate positioning
     const relativeRects = rects.map(rect => ({
-      x: rect.left - containerRect.left,
-      y: rect.top - containerRect.top,
+      x: rect.left - canvasRect.left,
+      y: rect.top - canvasRect.top,
       width: rect.width,
       height: rect.height,
     }));
 
-    onTextSelect?.({ 
-      text: selectedText, 
+    onTextSelect?.({
+      text: selectedText,
       rects: relativeRects as unknown as DOMRect[],
       position,
     });
@@ -145,47 +146,52 @@ export const PDFPage = memo(function PDFPage({
   const pageHighlights = highlights.filter(h => h.pageNumber === page.pageNumber);
 
   return (
-    <div ref={containerRef} className="relative flex items-center justify-center">
-      {/* Canvas layer */}
-      <canvas
-        ref={canvasRef}
-        className={`transition-opacity duration-300 ${isRendered ? 'opacity-100' : 'opacity-0'}`}
-      />
-      
-      {/* Text layer for selection */}
-      <div
-        ref={textLayerRef}
-        className="absolute top-0 left-0 text-layer select-text"
-        onMouseUp={handleMouseUp}
-        style={{
-          lineHeight: 1,
-        }}
-      />
+    <div
+      ref={containerRef}
+      className="relative page-container bg-white dark:bg-neutral-900 rounded-sm shadow-md"
+    >
+      {/* Canvas wrapper - contains canvas, highlights, and text layer */}
+      <div className="relative inline-block">
+        {/* Canvas layer */}
+        <canvas
+          ref={canvasRef}
+          className={`block transition-opacity duration-300 ${isRendered ? 'opacity-100' : 'opacity-0'}`}
+        />
 
-      {/* Highlight overlays */}
-      {pageHighlights.map((highlight) => (
-        <div key={highlight.id} className="pointer-events-none">
-          {highlight.rects.map((rect, idx) => (
-            <div
-              key={`${highlight.id}-${idx}`}
-              className="absolute pointer-events-none"
-              style={{
-                left: rect.x,
-                top: rect.y,
-                width: rect.width,
-                height: rect.height,
-                backgroundColor: HIGHLIGHT_COLORS[highlight.color].bg,
-                mixBlendMode: 'multiply',
-              }}
-            />
+        {/* Highlight overlays - positioned relative to canvas */}
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+          {pageHighlights.map((highlight) => (
+            <div key={highlight.id}>
+              {highlight.rects.map((rect, idx) => (
+                <div
+                  key={`${highlight.id}-${idx}`}
+                  className="absolute rounded-sm"
+                  style={{
+                    left: rect.x,
+                    top: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                    backgroundColor: HIGHLIGHT_COLORS[highlight.color].bg,
+                    mixBlendMode: 'multiply',
+                  }}
+                />
+              ))}
+            </div>
           ))}
         </div>
-      ))}
+
+        {/* Text layer for selection - positioned relative to canvas */}
+        <div
+          ref={textLayerRef}
+          className="textLayer"
+          onMouseUp={handleMouseUp}
+        />
+      </div>
 
       {/* Loading indicator */}
       {!isRendered && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+          <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       )}
     </div>

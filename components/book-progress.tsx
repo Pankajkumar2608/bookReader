@@ -17,33 +17,28 @@ export const BookProgress = memo(function BookProgress({
 
   return (
     <div
-      className={`fixed right-6 top-1/2 -translate-y-1/2 transition-opacity duration-500 ${
-        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
+      className={`fixed right-4 top-1/2 -translate-y-1/2 transition-opacity duration-500 hidden lg:block ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
     >
       {/* Book spine visual */}
-      <div className="relative w-3 h-48 bg-secondary rounded-full overflow-hidden shadow-inner">
+      <div className="relative w-2 h-32 bg-secondary/50 rounded-full overflow-hidden">
         {/* Read portion (from top) */}
         <div
-          className="absolute top-0 left-0 w-full bg-primary/60 rounded-full transition-all duration-300 ease-out"
+          className="absolute top-0 left-0 w-full bg-primary/40 rounded-full transition-all duration-300 ease-out"
           style={{ height: `${progress}%` }}
         />
-        
+
         {/* Current position marker */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-5 h-1 bg-primary rounded-full shadow-sm transition-all duration-300 ease-out"
-          style={{ top: `calc(${progress}% - 2px)` }}
+          className="absolute left-1/2 -translate-x-1/2 w-4 h-1 bg-primary rounded-full shadow-sm transition-all duration-300 ease-out"
+          style={{ top: `calc(${Math.min(progress, 98)}% - 2px)` }}
         />
       </div>
-      
+
       {/* Page indicator */}
-      <div className="mt-3 text-center">
-        <span className="text-xs font-serif text-muted-foreground">
-          {currentPage}
-        </span>
-        <span className="text-xs text-muted-foreground/50 mx-1">/</span>
-        <span className="text-xs text-muted-foreground/50">
-          {totalPages}
+      <div className="mt-2 text-center">
+        <span className="text-xs font-medium text-muted-foreground">
+          {currentPage}/{totalPages}
         </span>
       </div>
     </div>

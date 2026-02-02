@@ -58,7 +58,7 @@ const BookCard = memo(function BookCard({
         onClick={onSelect}
       >
         {/* Cover thumbnail */}
-        <div className="w-12 h-16 bg-secondary rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+        <div className="w-12 h-16 bg-secondary rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
           {book.coverUrl ? (
             <img src={book.coverUrl || "/placeholder.svg"} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -82,7 +82,7 @@ const BookCard = memo(function BookCard({
 
         {/* Progress */}
         {book.totalPages > 0 && (
-          <div className="w-20 flex-shrink-0">
+          <div className="w-20 shrink-0">
             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
@@ -135,11 +135,11 @@ const BookCard = memo(function BookCard({
       onClick={onSelect}
     >
       {/* Book cover */}
-      <div className="aspect-[2/3] bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+      <div className="aspect-2/3 bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
         {book.coverUrl ? (
           <img src={book.coverUrl || "/placeholder.svg"} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-secondary to-muted">
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-linear-to-br from-secondary to-muted">
             <FileText className="w-12 h-12 text-muted-foreground mb-3" />
             <span className="text-xs text-muted-foreground text-center line-clamp-3 font-serif">
               {book.title}
@@ -215,7 +215,7 @@ export const LibraryView = memo(function LibraryView({
     <main className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-primary" />
@@ -232,9 +232,8 @@ export const LibraryView = memo(function LibraryView({
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'grid' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                }`}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                  }`}
                 aria-label="Grid view"
               >
                 <Grid className="w-4 h-4 text-foreground" />
@@ -242,9 +241,8 @@ export const LibraryView = memo(function LibraryView({
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-colors ${
-                  viewMode === 'list' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                }`}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                  }`}
                 aria-label="List view"
               >
                 <List className="w-4 h-4 text-foreground" />
@@ -265,7 +263,7 @@ export const LibraryView = memo(function LibraryView({
       </header>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {books.length === 0 ? (
           <div className="text-center py-20">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-secondary mb-6">
@@ -283,7 +281,7 @@ export const LibraryView = memo(function LibraryView({
             </button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
             {books.map((book) => (
               <BookCard
                 key={book.id}
