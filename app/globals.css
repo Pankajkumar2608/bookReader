@@ -1,47 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
-
-/* Book Reader - Warm Paper Theme */
+/* Book Reader - Dark Theme Only */
 :root {
-  --background: #F7F3EB;
-  --foreground: #2C2825;
-  --card: #FFFDF8;
-  --card-foreground: #2C2825;
-  --popover: #FFFDF8;
-  --popover-foreground: #2C2825;
-  --primary: #6B5B4F;
-  --primary-foreground: #FFFDF8;
-  --secondary: #EDE8E0;
-  --secondary-foreground: #2C2825;
-  --muted: #E8E3DA;
-  --muted-foreground: #6B635A;
-  --accent: #D4C4A8;
-  --accent-foreground: #2C2825;
-  --destructive: #B54B4B;
-  --destructive-foreground: #FFFDF8;
-  --border: #D8D2C7;
-  --input: #D8D2C7;
-  --ring: #6B5B4F;
-  --chart-1: #8B7355;
-  --chart-2: #A69076;
-  --chart-3: #C4B49A;
-  --chart-4: #D4C4A8;
-  --chart-5: #E8DCC8;
-  --radius: 0.5rem;
-  
-  /* Book-specific tokens */
-  --paper: #FAF8F3;
-  --paper-dark: #F5F1E8;
-  --ink: #2C2825;
-  --ink-light: #5C5650;
-  --highlight: #FFF3B8;
-  --highlight-soft: rgba(255, 243, 184, 0.5);
-  --underline: #D4C4A8;
-}
-
-.dark {
   --background: #1A1918;
   --foreground: #E8E4DC;
   --card: #242220;
@@ -66,8 +27,9 @@
   --chart-3: #A69076;
   --chart-4: #8B7355;
   --chart-5: #6B5B4F;
+  --radius: 0.5rem;
   
-  /* Book-specific tokens - night mode */
+  /* Book-specific tokens - dark mode */
   --paper: #242220;
   --paper-dark: #1E1C1A;
   --ink: #D8D4CC;
@@ -132,8 +94,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    background-color: var(--background);
+  }
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
   }
 }
 
@@ -161,12 +127,8 @@
 }
 
 .textLayer ::selection {
-  background: rgba(139, 115, 85, 0.3);
-  color: transparent;
-}
-
-.dark .textLayer ::selection {
   background: rgba(212, 196, 168, 0.4);
+  color: transparent;
 }
 
 /* Highlight overlays */
@@ -180,19 +142,8 @@
 /* Page container styling */
 .page-container {
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.dark .page-container {
-  box-shadow: 
     0 1px 3px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.03);
-}
-
-/* Smooth scrolling for reader */
-html {
-  scroll-behavior: smooth;
 }
 
 /* Hide scrollbar but allow scrolling */

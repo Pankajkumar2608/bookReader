@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
-const _crimsonText = Crimson_Text({ 
+const _crimsonText = Crimson_Text({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
   style: ["normal", "italic"],
@@ -34,10 +34,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F7F3EB' },
-    { media: '(prefers-color-scheme: dark)', color: '#1A1918' },
-  ],
+  themeColor: '#1A1918',
   userScalable: false,
 }
 
@@ -47,8 +44,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans antialiased`}>
+    <html lang="en" style={{ backgroundColor: '#1A1918' }}>
+      <body className={`font-sans antialiased bg-background text-foreground min-h-screen`}>
         {children}
         <Analytics />
       </body>

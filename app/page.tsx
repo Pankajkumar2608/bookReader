@@ -64,11 +64,11 @@ export default function Home() {
   // Keep refs to avoid stale closures in callbacks
   const activeBookRef = useRef(activeBook);
   const updateBookRef = useRef(updateBook);
-  
+
   useEffect(() => {
     activeBookRef.current = activeBook;
   }, [activeBook]);
-  
+
   useEffect(() => {
     updateBookRef.current = updateBook;
   }, [updateBook]);
@@ -135,15 +135,15 @@ export default function Home() {
   // If no books in library or showing upload, show upload screen
   if (books.length === 0 || showUpload) {
     return (
-      <UploadScreen 
-        onFileSelect={handleFileSelect} 
+      <UploadScreen
+        onFileSelect={handleFileSelect}
       />
     );
   }
 
   // Show library view
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <input
         ref={fileInputRef}
         type="file"
@@ -157,6 +157,6 @@ export default function Home() {
         onUploadNew={handleOpenUpload}
         onDeleteBook={removeBook}
       />
-    </>
+    </div>
   );
 }

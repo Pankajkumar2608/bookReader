@@ -20,6 +20,7 @@ import { useBookState } from '@/hooks/use-book-state';
 import { useImmersiveUI } from '@/hooks/use-immersive-ui';
 import { useReadingStats } from '@/hooks/use-reading-stats';
 import { useZoomPan } from '@/hooks/use-zoom-pan';
+import { KeyboardShortcuts } from './keyboard-shortcuts';
 import type { Chapter } from '@/lib/reader-types';
 import { MARGIN_VALUES } from '@/lib/reader-types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -55,53 +56,46 @@ const LazyPDFPage = ({ pdfDoc, pageNumber, scale, ...props }: any) => {
   return <PDFPage page={page} scale={scale} {...props} />;
 };
 
-// Helper component for Continuous View - with debounced visibility updates
-const PDFPageWrapper = ({ pdfDoc, pageNumber, onVisible, ...props }: any) => {
+// Helper component for Continuous View - lazy loads pages
+const PDFPageWrapper = ({ pdfDoc, pageNumber, scale, containerWidth, highlights, onTextSelect, onSelectionClear }: {
+  pdfDoc: PDFDocumentProxy;
+  pageNumber: number;
+  scale: number;
+  containerWidth: number;
+  highlights: any[];
+  onTextSelect?: (selection: any) => void;
+  onSelectionClear?: () => void;
+}) => {
   const ref = useRef<HTMLDivElement>(null);
-  const entry = useIntersectionObserver(ref, { threshold: 0.5 });
+  const entry = useIntersectionObserver(ref, { threshold: 0.1, rootMargin: '200px' });
   const [page, setPage] = useState<PDFPageProxy | null>(null);
-  const isVisible = !!entry?.isIntersecting;
-  const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hasReportedRef = useRef(false);
+  const isNearViewport = !!entry?.isIntersecting;
 
-  // Debounced visibility callback to prevent rapid page changes
+  // Load page when it's near viewport
   useEffect(() => {
-    if (isVisible && !hasReportedRef.current) {
-      // Only report after being visible for 100ms to avoid flicker
-      visibilityTimeoutRef.current = setTimeout(() => {
-        hasReportedRef.current = true;
-        onVisible();
-      }, 100);
-    } else if (!isVisible) {
-      // Reset on becoming invisible
-      hasReportedRef.current = false;
-      if (visibilityTimeoutRef.current) {
-        clearTimeout(visibilityTimeoutRef.current);
-        visibilityTimeoutRef.current = null;
-      }
-    }
+    if (!isNearViewport || page) return;
 
-    return () => {
-      if (visibilityTimeoutRef.current) {
-        clearTimeout(visibilityTimeoutRef.current);
-      }
-    };
-  }, [isVisible, onVisible]);
-
-  useEffect(() => {
     let cancelled = false;
     pdfDoc.getPage(pageNumber).then((p: PDFPageProxy) => {
       if (!cancelled) setPage(p);
     });
     return () => { cancelled = true; };
-  }, [pdfDoc, pageNumber]);
+  }, [pdfDoc, pageNumber, isNearViewport, page]);
 
+  // Don't set a fixed height - let the page size determine it
   return (
-    <div ref={ref} className="min-h-[400px] flex justify-center">
+    <div ref={ref}>
       {page ? (
-        <PDFPage page={page} {...props} />
+        <PDFPage
+          page={page}
+          scale={scale}
+          containerWidth={containerWidth}
+          highlights={highlights}
+          onTextSelect={onTextSelect}
+          onSelectionClear={onSelectionClear}
+        />
       ) : (
-        <div className="w-full h-[600px] flex items-center justify-center bg-card rounded-lg">
+        <div className="w-full h-[700px] flex items-center justify-center bg-card/50 rounded-lg">
           <div className="w-8 h-8 border-2 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
         </div>
       )}
@@ -126,6 +120,7 @@ export function PDFReader({
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'double' | 'continuous'>('continuous'); // Default to continuous
   const [textSelection, setTextSelection] = useState<{
     text: string;
@@ -434,11 +429,55 @@ export function PDFReader({
     setTextSelection(null);
   }, [textSelection, currentPage, addHighlight]);
 
+  // Fullscreen toggle handler
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      readerRef.current?.requestFullscreen?.().catch(() => {
+        // Fallback: just track the state even if API fails
+      });
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => { });
+      setIsFullscreen(false);
+    }
+  }, []);
+
   // Keyboard navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Don't navigate if a panel is open or search is focused
-      if (showSettings || showChapters || showBookmarks || showStats) return;
+      // Escape key - close panels or reader
+      if (e.key === 'Escape') {
+        if (showShortcuts) {
+          setShowShortcuts(false);
+          return;
+        }
+        if (showSearch) {
+          setShowSearch(false);
+          return;
+        }
+        if (showSettings) {
+          setShowSettings(false);
+          return;
+        }
+        if (showChapters) {
+          setShowChapters(false);
+          return;
+        }
+        if (showBookmarks) {
+          setShowBookmarks(false);
+          return;
+        }
+        if (showStats) {
+          setShowStats(false);
+          return;
+        }
+        // If no panels open, close the reader
+        onClose();
+        return;
+      }
+
+      // Don't handle other keys if panels are open
+      if (showSettings || showChapters || showBookmarks || showStats || showShortcuts) return;
 
       // Cmd/Ctrl + F for search
       if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
@@ -450,6 +489,7 @@ export function PDFReader({
       if (showSearch) return;
 
       switch (e.key) {
+        // Navigation
         case 'ArrowRight':
         case 'ArrowDown':
         case 'PageDown':
@@ -471,6 +511,8 @@ export function PDFReader({
           e.preventDefault();
           setCurrentPage(totalPages);
           break;
+
+        // Zoom controls
         case '+':
         case '=':
           if (e.metaKey || e.ctrlKey) {
@@ -490,6 +532,56 @@ export function PDFReader({
             resetZoom();
           }
           break;
+
+        // Panel shortcuts
+        case 's':
+        case 'S':
+          if (!e.metaKey && !e.ctrlKey) {
+            setShowSettings(true);
+          }
+          break;
+        case 'c':
+        case 'C':
+          if (!e.metaKey && !e.ctrlKey) {
+            setShowChapters(true);
+          }
+          break;
+        case 'b':
+        case 'B':
+          if (!e.metaKey && !e.ctrlKey) {
+            setShowBookmarks(true);
+          }
+          break;
+
+        // Fullscreen toggle
+        case 'f':
+        case 'F':
+          if (!e.metaKey && !e.ctrlKey) {
+            toggleFullscreen();
+          }
+          break;
+
+        // View mode shortcuts (1, 2, 3)
+        case '1':
+          if (!e.metaKey && !e.ctrlKey) {
+            setViewMode('single');
+          }
+          break;
+        case '2':
+          if (!e.metaKey && !e.ctrlKey) {
+            setViewMode('double');
+          }
+          break;
+        case '3':
+          if (!e.metaKey && !e.ctrlKey) {
+            setViewMode('continuous');
+          }
+          break;
+
+        // Help
+        case '?':
+          setShowShortcuts(prev => !prev);
+          break;
       }
     }
 
@@ -505,33 +597,13 @@ export function PDFReader({
     showBookmarks,
     showStats,
     showSearch,
+    showShortcuts,
     zoomIn,
     zoomOut,
     resetZoom,
+    onClose,
+    toggleFullscreen,
   ]);
-
-  // Apply theme
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('dark');
-
-    if (settings.theme === 'dark') {
-      root.classList.add('dark');
-    }
-  }, [settings.theme]);
-
-  // Fullscreen toggle handler
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      readerRef.current?.requestFullscreen?.().catch(() => {
-        // Fallback: just track the state even if API fails
-      });
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.().catch(() => { });
-      setIsFullscreen(false);
-    }
-  }, []);
 
   // Listen for fullscreen changes (e.g., user pressing Escape)
   useEffect(() => {
@@ -539,7 +611,14 @@ export function PDFReader({
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+
+    // Cleanup: exit fullscreen when reader closes
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => { });
+      }
+    };
   }, []);
 
   if (isLoading) {
@@ -557,8 +636,7 @@ export function PDFReader({
   return (
     <div
       ref={readerRef}
-      className={`min-h-screen h-screen overflow-y-auto transition-colors duration-500 ${settings.theme === 'sepia' ? 'bg-[#F5ECD7]' : 'bg-background'
-        }`}
+      className="min-h-screen h-screen overflow-y-auto bg-background"
     >
       <ReaderToolbar
         title={bookTitle}
@@ -625,6 +703,11 @@ export function PDFReader({
         onClose={() => setShowStats(false)}
       />
 
+      <KeyboardShortcuts
+        isVisible={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
+
       <BookProgress
         currentPage={currentPage}
         totalPages={totalPages}
@@ -684,10 +767,9 @@ export function PDFReader({
           }}
           onDoubleClick={handlers.handleDoubleClick as unknown as React.MouseEventHandler}
         >
-          {viewMode === 'continuous' ? (
-            // Continuous Scroll Mode - render pages around current view
+          {viewMode === 'continuous' && pdfDoc ? (
+            // Continuous Scroll Mode - render all pages with lazy loading
             Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(pageNum => Math.abs(pageNum - currentPage) < 8) // Smaller window for better perf
               .map(pageNum => (
                 <div key={pageNum} className="relative" id={`page-${pageNum}`}>
                   <PDFPageWrapper
@@ -698,7 +780,6 @@ export function PDFReader({
                     highlights={highlights}
                     onTextSelect={handleTextSelect}
                     onSelectionClear={handleSelectionClear}
-                    onVisible={() => setCurrentPage(pageNum)}
                   />
                   <div className="text-center text-xs text-muted-foreground/50 py-2">
                     {pageNum} / {totalPages}
