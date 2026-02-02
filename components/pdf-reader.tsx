@@ -214,6 +214,7 @@ export function PDFReader({
             }).promise;
 
             const coverUrl = canvas.toDataURL('image/jpeg', 0.7);
+            canvas.remove();
             onUpdateMeta?.({
               totalPages: pdf.numPages,
               currentPage,

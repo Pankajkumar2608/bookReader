@@ -155,3 +155,6 @@
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+canvas.hiddenCanvasElement {
+  display: none !important;
+}
